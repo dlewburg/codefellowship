@@ -49,11 +49,15 @@ public class AppUserController {
     }
 
     @PostMapping("/signup")
-    public RedirectView createUser(String username, String password) {
+    public RedirectView createUser(String username, String password, String firstName, String lastName, String dateOfBirth, String bio) {
         AppUser newUser = new AppUser();
         newUser.setUsername(username);
         String encryptedPassword = passwordEncoder.encode(password);
         newUser.setPassword(encryptedPassword);
+        newUser.setFirstName(firstName);
+        newUser.setLastName(lastName);
+        newUser.setDateOfBirth(dateOfBirth);
+        newUser.setBio(bio);
 
         appUserRepo.save(newUser);
         authWithHttpServletRequest(username, password);
