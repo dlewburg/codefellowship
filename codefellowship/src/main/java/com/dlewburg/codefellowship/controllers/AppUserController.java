@@ -1,17 +1,40 @@
 package com.dlewburg.codefellowship.controllers;
 
+import com.dlewburg.codefellowship.models.AppUser;
 import com.dlewburg.codefellowship.repos.AppUserRepo;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.view.RedirectView;
+
+import java.security.Principal;
 
 @Controller
 public class AppUserController {
     @Autowired
     AppUserRepo appUserRepo;
 
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private HttpServletRequest request;
+
     @GetMapping("/")
-    public String getHomePage(){
+    public String getHomePage(Model m, Principal p) {
+
+        if(p != null) {
+
+            String username = p.getName();
+            AppUser user = appUserRepo.findByUsername(username);
+
+            m.addAttribute("username", username);
+        }
         return "index.html";
     }
 
@@ -24,4 +47,27 @@ public class AppUserController {
     public String getSignUpPage() {
         return "signup.html";
     }
+
+    @PostMapping("/signup")
+    public RedirectView createUser(String username, String password) {
+        AppUser newUser = new AppUser();
+        newUser.setUsername(username);
+        String encryptedPassword = passwordEncoder.encode(password);
+        newUser.setPassword(encryptedPassword);
+
+        appUserRepo.save(newUser);
+        authWithHttpServletRequest(username, password);
+        return new RedirectView("/");
+    }
+
+    public void authWithHttpServletRequest(String username, String password) {
+        try{
+            request.login(username, password);
+        } catch(ServletException e) {
+            System.out.println("Error While Logging In");
+            e.printStackTrace();
+        }
+    }
+
+
 }
