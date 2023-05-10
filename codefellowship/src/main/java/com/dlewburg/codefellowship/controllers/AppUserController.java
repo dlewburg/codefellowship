@@ -5,10 +5,13 @@ import com.dlewburg.codefellowship.repos.AppUserRepo;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -40,8 +43,10 @@ public class AppUserController {
 
     @GetMapping("/login")
     public String getLoginPage() {
+        //
         return "login.html";
     }
+
 
     @GetMapping("/signup")
     public String getSignUpPage() {
@@ -61,6 +66,8 @@ public class AppUserController {
 
         appUserRepo.save(newUser);
         authWithHttpServletRequest(username, password);
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(newUser, newUser.getPassword(), newUser.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
         return new RedirectView("/");
     }
 
@@ -71,6 +78,24 @@ public class AppUserController {
             System.out.println("Error While Logging In");
             e.printStackTrace();
         }
+    }
+
+    @GetMapping("/user/{id}")
+    public String getUserInfoPage(Model m, Principal p, @PathVariable long id) {
+        if(p != null) { // ensures someone is logged in; not needed if web security config is set up properly
+            String username = p.getName();
+            AppUser  browsingUser = appUserRepo.findByUsername(username);
+            m.addAttribute("username", browsingUser.getUsername());
+        }
+
+        AppUser profileUser = appUserRepo.findById(id).orElseThrow();
+        m.addAttribute("profileFirstName", profileUser.getFirstName());
+        m.addAttribute("profileLastName", profileUser.getLastName());
+        m.addAttribute("profileBio", profileUser.getBio());
+        m.addAttribute("profileDateOfBirth", profileUser.getDateOfBirth());
+
+
+        return "myprofile.html";
     }
 
 
